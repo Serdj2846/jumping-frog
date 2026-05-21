@@ -10,5 +10,5 @@ const VK_CONFIG = {
 
   // URL, где будет размещена игра (после деплоя)
   // Например: https://mygame.example.com
-  baseUrl: 'https://vk.com/app54602787',
+  baseUrl: 'https://serdj2846.github.io/jumping-frog',
 };
