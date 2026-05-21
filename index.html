@@ -296,17 +296,15 @@ const VK = {
     }
   },
 
-  // Возвращает массив зрителей: реальные друзья или мок
+  // Возвращает массив зрителей: только реальные друзья, без моков
   async getSpectators(score) {
-    // Пробуем реальных друзей
     if (this.ready && !this.friends) {
       await this.fetchFriends();
     }
     if (this.friends && this.friends.length > 0) {
       return this._buildSpectators(this.friends, score);
     }
-    // Fallback: мок-данные
-    return this._buildMockSpectators(score);
+    return [];
   },
 
   _buildSpectators(users, score) {
@@ -525,54 +523,20 @@ const SPECTATORS = {
     this.currentScore = -1;
     this.targetScore = -1;
     this.enabled = SETTINGS.get('spectators', true);
-
-    // Предзаполняем db для всех счётов — VK подтянется асинхронно
-    for (let s = 4; s <= 120; s++) {
-      this.db[s] = this._buildFallback(s);
-    }
-    // Асинхронно пробуем заменить на реальные данные
+    // Только реальные друзья VK — без моков
     this._loadVKData();
-  },
-
-  _buildFallback(score) {
-    const colors = ['#4ade80','#60a5fa','#f472b6','#fbbf24','#a78bfa',
-                    '#34d399','#f87171','#2dd4bf','#fb923c','#818cf8',
-                    '#e879f9','#22d3ee','#f97316','#14b8a6','#a855f7'];
-    const names = [
-      ['Алексей','Иванов'],['Дмитрий','Смирнов'],['Максим','Кузнецов'],
-      ['Сергей','Попов'],['Андрей','Васильев'],['Иван','Петров'],
-      ['Владимир','Соколов'],['Артём','Михайлов'],['Никита','Новиков'],
-      ['Михаил','Фёдоров'],['Екатерина','Морозова'],['Анна','Волкова'],
-      ['Ольга','Алексеева'],['Наталья','Лебедева'],['Юлия','Семёнова'],
-      ['Татьяна','Егорова'],['Мария','Павлова'],['Елена','Козлова'],
-    ];
-    let count;
-    if (score <= 15)      count = 8 + Math.floor(Math.random() * 30);
-    else if (score <= 40) count = 4 + Math.floor(Math.random() * 15);
-    else if (score <= 70) count = 2 + Math.floor(Math.random() * 8);
-    else                  count = 1 + Math.floor(Math.random() * 4);
-    count = Math.min(count, 40);
-    const list = [];
-    for (let i = 0; i < count; i++) {
-      const [first, last] = names[Math.floor(Math.random() * names.length)];
-      const id = 100000 + Math.floor(Math.random() * 89900000);
-      list.push({
-        id, name: `${first} ${last}`,
-        initials: first[0] + last[0],
-        color: colors[Math.floor(Math.random() * colors.length)],
-        vkUrl: `https://vk.com/id${id}`,
-      });
-    }
-    return list;
   },
 
   async _loadVKData() {
     const users = await VK.getSpectators(50);
     if (!users || users.length === 0) return;
-    // Заменяем fallback на реальные данные
+    // Заполняем db реальными друзьями
     for (let s = 4; s <= 120; s++) {
-      let count = this.db[s] ? this.db[s].length : 8;
-      count = Math.min(count, users.length);
+      let count;
+      if (s <= 15)      count = Math.min(users.length, 8 + Math.floor(Math.random() * 30));
+      else if (s <= 40) count = Math.min(users.length, 4 + Math.floor(Math.random() * 15));
+      else if (s <= 70) count = Math.min(users.length, 2 + Math.floor(Math.random() * 8));
+      else              count = Math.min(users.length, 1 + Math.floor(Math.random() * 4));
       const list = [];
       for (let i = 0; i < count; i++) {
         const u = users[i % users.length];
